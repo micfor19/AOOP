@@ -60,9 +60,8 @@ public class GameMain extends JPanel {	/**
 		   // Constructor to construct each element of the enum with its own sound file.
 		   SoundEffect(String soundFileName) {
 		      try {
-		         // Use URL (instead of File) to read from disk and JAR.
-		         //URL url = this.getClass().getClassLoader().getResource(soundFileName);
-		    	  File f = new File(soundFileName);
+		         // Use File to read from disk
+		    	 File f = new File(soundFileName);
 		         // Set up an audio input stream piped from the sound file.
 		         AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f.toURI().toURL());
 		         // Get a clip resource.
@@ -169,19 +168,88 @@ public class GameMain extends JPanel {	/**
 	   
 	   // Initialize all the game objects, run only once.
 	   public void gameInit() { 
-		   state = GameState.INITIALIZED;
+		setupMenuBar();
+		SoundEffect.init();
+		    
+		walls = new ArrayList<>();
+	        crates = new ArrayList<>();
+	        targets = new ArrayList<>();
+	        spaces = new ArrayList<>();
+
+	        int x = OFFSET;
+	        int y = OFFSET;
+
+	        Wall wall;
+	        Crate c;
+	        Target t;
+	        Floor f;
+		   
+		// Initialize world
+		for (int i = 0; i < level.length(); i++) {
+
+	            char item = level.charAt(i);
+
+	            switch (item) {
+
+	                case '\n':
+	                    y += SPACE;
+
+	                    if (this.w < x) {
+	                        this.w = x;
+	                    }
+
+	                    x = OFFSET;
+	                    break;
+
+	                case '#':
+	                    wall = new Wall(x, y);
+	                    walls.add(wall);
+	                    x += SPACE;
+	                    break;
+
+	                case '$':
+	                    c = new Crate(x, y);
+	                    f = new Floor(x, y);
+	                    crates.add(c);
+	                    spaces.add(f);
+	                    x += SPACE;
+	                    break;
+
+	                case '*':
+	                    t = new Target(x, y);
+	                    targets.add(t);
+	                    x += SPACE;
+	                    break;
+
+	                case '@':
+	                    worker = new Worker(x, y);
+	                    f = new Floor(x, y);
+	                    spaces.add(f);
+	                    x += SPACE;
+	                    break;
+
+	                case ' ':
+	                	f = new Floor(x, y);
+	                	spaces.add(f);
+	                    x += SPACE;
+	                    break;
+
+	                default:
+	                    break;
+	            }
+	            h = y;
+	        }
+		state = GameState.INITIALIZED;
 	   }
 	   
-	// Update the state and position of all the game objects,
-	   // detect collisions and provide responses.
+	   // check status of the game
 	   public void gameUpdate() { 
-	   
+	   	isCompleted();
 	   }
 	   
 	// Run the game loop here.
 	   private void gameLoop() {
-	      // Regenerate the game objects for a new game
-	      // ......
+
 	      state = GameState.PLAYING;
 	   
 	      // Game loop
@@ -189,8 +257,7 @@ public class GameMain extends JPanel {	/**
 	      while (state != GameState.GAMEOVER) {
 	         beginTime = System.nanoTime();
 	         if (state == GameState.PLAYING) {   // not paused
-	            // Update the state and position of all the game objects,
-	            // detect collisions and provide responses.
+	            // check status of the game
 	            gameUpdate();
 	         }
 	         // Refresh the display
@@ -224,38 +291,132 @@ public class GameMain extends JPanel {	/**
 	   private void gameDraw(Graphics2D g2d) {
 	      switch (state) {
 	         case INITIALIZED:
-	            // ......
+	            // start drawing in 'PLAYING' state
 	            break;
 	         case PLAYING:
-	            // ......
+	            g.setColor(new Color(250, 240, 170));
+	            g.fillRect(0, 0, this.getWidth(), this.getHeight());
+
+	            // Order of drawing is critical for correct visualization
+	            world.addAll(walls);
+	            world.addAll(targets);
+	            world.addAll(spaces);
+	            world.addAll(crates);
+	            world.add(worker);
+	             
+	            for (int i = 0; i < world.size(); i++) {
+
+	                 GameObject item = world.get(i);
+
+	                 if (item instanceof Worker || item instanceof Crate) {
+	                     
+	                     g.drawImage(item.getImage(), item.getX() + 2, item.getY() + 2, this);
+	                 } else {
+	                     
+	                     g.drawImage(item.getImage(), item.getX(), item.getY(), this);
+	                 }
+		    }
 	            break;
 	         case PAUSED:
-	            // ......
+	            // Just an info text
+	            g.setColor(new Color(0, 0, 0));
+		    g.drawString("Paused, resume with (P)", 25, 20);
 	            break;
 	         case GAMEOVER:
-	            // ......
+	            g.setColor(new Color(0, 0, 0));
+	            if (level != level3) g.drawString("Completed - next Level (Y)?", 25, 20);
+	            else		 g.drawString("All levels passed, restart (R)?", 25, 20);
 	            break;
 		default:
-			break;
+		    break;
 	      }
-	      // ...... 
+	      
 	   }
 	   
 	   // Process a key-pressed event. Update the current state.
 	   public void gameKeyPressed(int keyCode) {
+	      if (state == GameState.GAMEOVER) {
+		   // different key handling outside of the game
+		   if (keyCode == KeyEvent.VK_Y)	{
+			   if (level == level1)	level = level2;
+			   else if (level == level2) level = level3;
+			   gameInit();
+			   gameStart();					
+		   }
+		   if (keyCode == KeyEvent.VK_R)	{
+			   level = level1;
+			   gameInit();
+			   gameStart();
+		   }
+               return;
+           }
 	      switch (keyCode) {
-	         case KeyEvent.VK_UP:
-	            // ......
+		 // WASD keyboard layout
+	         case KeyEvent.VK_W:
+	            direction = CollisionCheck.UP;
+	            if (checkWallCollision(worker)) {
+                    	return;
+                    }
+	            if (checkCrateCollision()) {
+                    	return;
+                    }
+	            worker.move(0, -SPACE);
+	            if (defaultSound) SoundEffect.STEP.play();
+	            else defaultSound = true;
 	            break;
-	         case KeyEvent.VK_DOWN:
-	            // ......
+	         case KeyEvent.VK_S:
+	            direction = CollisionCheck.DOWN;
+	            if (checkWallCollision(worker)) {
+                    	return;
+                    }
+	            if (checkCrateCollision()) {
+                    	return;
+                    }
+	            worker.move(0, SPACE);
+	            if (defaultSound) SoundEffect.STEP.play();
+	            else defaultSound = true;
 	            break;
-	         case KeyEvent.VK_LEFT:
-	            // ......
+	         case KeyEvent.VK_A:
+	            direction = CollisionCheck.LEFT;
+	            if (checkWallCollision(worker)) {
+                    	return;
+                    }
+	            if (checkCrateCollision()) {
+                    	return;
+                    }
+	            worker.move(-SPACE, 0);
+	            if (defaultSound) SoundEffect.STEP.play();
+	            else defaultSound = true;
 	            break;
-	         case KeyEvent.VK_RIGHT:
-	            // ......
+	         case KeyEvent.VK_D:
+	            direction = CollisionCheck.RIGHT;
+	            if (checkWallCollision(worker)) {
+                    	return;
+                    }
+	            if (checkCrateCollision()) {
+                    	return;
+                    }
+	            worker.move(SPACE, 0);
+	            if (defaultSound) SoundEffect.STEP.play();
+	            else defaultSound = true;
 	            break;
+	          // special functionalities
+	          case KeyEvent.VK_P:
+	        	 if (state == GameState.PLAYING)	{
+	        		 state = GameState.PAUSED;
+	        		 legalPause = true;
+	        	 }	 else if (legalPause)	{
+	        		 state = GameState.PLAYING;
+	        		 legalPause = false;
+	        	 }
+	         case KeyEvent.VK_M:
+	        	 if (SoundEffect.volume == SoundEffect.Volume.MUTE) {
+	                  	SoundEffect.volume = SoundEffect.Volume.LOW;
+			 } else	{	
+		         	SoundEffect.volume = SoundEffect.Volume.MUTE;
+			 }
+	         default:
+	        	break;
 	      }
 	   }
 	   
@@ -277,12 +438,12 @@ public class GameMain extends JPanel {	/**
 	      // Called back by repaint().
 	      @Override
 	      public void paintComponent(Graphics g) {
-	         Graphics2D g2d = (Graphics2D)g;
-	         super.paintComponent(g2d);   // paint background
-	         setBackground(Color.BLACK);  // may use an image for background
+
+	         super.paintComponent(g);   // paint background
+	         setBackground(Color.LIGHT_GRAY);  // may use an image for background
 	   
 	         // Draw the game objects
-	         gameDraw(g2d);
+	         gameDraw(g);
 	      }
 	      
 	      // KeyEvent handlers
@@ -297,6 +458,257 @@ public class GameMain extends JPanel {	/**
 	      @Override
 	      public void keyTyped(KeyEvent e) { }
 	   }
+	
+	   // Helper function to setup the menubar
+	   private void setupMenuBar() {
+	      JMenu menu;         // a menu in the menu-bar
+	      JMenuItem menuItem; // a regular menu-item in a menu
+	      
+	      menuBar = new JMenuBar();
+	      
+	      // First Menu - "Game"
+	      menu = new JMenu("Game");
+	      menu.setMnemonic(KeyEvent.VK_G);
+	      menuBar.add(menu);
+	 
+	      menuItem = new JMenuItem("New", KeyEvent.VK_N);
+	      menu.add(menuItem);
+	      menuItem.addActionListener(new ActionListener() {
+	         @Override
+	         public void actionPerformed(ActionEvent e) {
+	            // Stop the current game if needed
+	            if (state == GameState.PLAYING || state == GameState.PAUSED) {
+	               state = GameState.GAMEOVER;
+	            }
+	            gameInit();
+	            gameStart();
+	         }
+	      });
+	      
+	      menuItem = new JMenuItem("Pause", KeyEvent.VK_P);
+	      menu.add(menuItem);
+	      menuItem.addActionListener(new ActionListener() {
+		         @Override
+		         public void actionPerformed(ActionEvent e) {
+		        	 if (state == GameState.PLAYING)	{
+		        		 state = GameState.PAUSED;
+		        		 legalPause = true;
+		        	 }	 else if (legalPause)	{
+		        		 state = GameState.PLAYING;
+		        		 legalPause = false;
+		        	 }
+		         }
+	      });
+	      
+	 
+	      // Help Menu
+	      menu = new JMenu("Help");
+	      menu.setMnemonic(KeyEvent.VK_H);
+	      menuBar.add(menu);
+
+	      menuItem = new JMenuItem("Help Contents", KeyEvent.VK_H);
+	      menu.add(menuItem);
+	      menuItem.addActionListener(new ActionListener() {
+	         @Override
+	         public void actionPerformed(ActionEvent e) {
+	            String msg = "Push the boxes on the red circles!\n"
+	            	  + "W/A/S/D to change direction\n"
+	                  + "P to pause/resume \n"
+	                  + "M to mute/unmute sound \n";
+	            JOptionPane.showMessageDialog(GameMain.this, 
+	                  msg, "Instructions", JOptionPane.PLAIN_MESSAGE);
+	         }
+	      });
+
+	      menuItem = new JMenuItem("About");
+	      menu.add(menuItem);
+	      menuItem.addActionListener(new ActionListener() {
+	         @Override
+	         public void actionPerformed(ActionEvent e) {
+	            JOptionPane.showMessageDialog(GameMain.this, 
+	                  "The super-fun SOKOBAN game for learning to program a game framework",
+	                  "About", JOptionPane.PLAIN_MESSAGE);
+	         }
+	      });
+	   }
+	
+	   // ------ Additional game related functions here ------	
+	   private boolean checkWallCollision(GameObject item)	{
+	        switch (direction) {
+	        
+	            case UP:	                
+	                for (int i = 0; i < walls.size(); i++) {	                    
+	                    Wall wall = walls.get(i);	                    
+	                    if (item.isTopCollision(wall)) {
+	                        SoundEffect.WALL.play();
+	                        return true;
+	                    }
+	                }	                
+	                return false;
+	                
+	            case DOWN:	                
+	                for (int i = 0; i < walls.size(); i++) {	                    
+	                    Wall wall = walls.get(i);	                    
+	                    if (item.isBottomCollision(wall)) {
+	                    	SoundEffect.WALL.play();
+	                        return true;
+	                    }
+	                }	                
+	                return false;
+	                
+		    case LEFT:
+			for (int i = 0; i < walls.size(); i++) {
+			    Wall wall = walls.get(i);
+			    if (item.isLeftCollision(wall)) {
+				SoundEffect.WALL.play();
+				return true;
+			    }
+			}
+			return false;
+
+		    case RIGHT:
+			for (int i = 0; i < walls.size(); i++) {
+			    Wall wall = walls.get(i);
+			    if (item.isRightCollision(wall)) {
+				SoundEffect.WALL.play();
+				return true;
+			    }
+			}		                
+			return false;
+
+		    default:
+			break;
+		    }	        
+	        return false;
+	    }
+	
+	    private boolean checkCrateCollision() {
+	        switch (direction) {
+	            
+	            case LEFT:	                
+	                for (int i = 0; i < crates.size(); i++) {
+	                    Crate crate = crates.get(i);
+				
+	                    if (worker.isLeftCollision(crate)) {
+	                        for (int j = 0; j < crates.size(); j++) {	                            
+	                            Crate item = crates.get(j);	 
+					
+	                            if (!crate.equals(item)) {	                                
+	                                if (crate.isLeftCollision(item)) {
+	                                    return true;
+	                                }
+	                            }	                            
+	                            if (checkWallCollision(crate)) {
+	                                return true;
+	                            }
+	                        }
+	                        defaultSound = false;
+	                        crate.move(-SPACE, 0);
+	                        SoundEffect.PUSH.play();
+	                    }
+	                }	                
+	                return false;
+	                
+	            case RIGHT:	                
+	                for (int i = 0; i < crates.size(); i++) {
+	                    Crate crate = crates.get(i);
+	                    
+	                    if (worker.isRightCollision(crate)) {
+	                        for (int j = 0; j < crates.size(); j++) {	                            
+	                            Crate item = crates.get(j);
+	                            
+	                            if (!crate.equals(item)) {	                                
+	                                if (crate.isRightCollision(item)) {
+	                                    return true;
+	                                }
+	                            }	                            
+	                            if (checkWallCollision(crate)) {
+	                                return true;
+	                            }
+	                        }
+	                        defaultSound = false;
+	                        crate.move(SPACE, 0);
+	                        SoundEffect.PUSH.play();
+	                    }
+	                }
+	                return false;
+	                
+	            case UP:	                
+	                for (int i = 0; i < crates.size(); i++) {
+	                    Crate crate = crates.get(i);
+	                    
+	                    if (worker.isTopCollision(crate)) {
+	                        for (int j = 0; j < crates.size(); j++) {	                            
+	                            Crate item = crates.get(j);
+	                            
+	                            if (!crate.equals(item)) {	                                
+	                                if (crate.isTopCollision(item)) {
+	                                    return true;
+	                                }
+	                            }	                            
+	                            if (checkWallCollision(crate)) {
+	                                return true;
+	                            }
+	                        }
+	                        defaultSound = false;
+	                        crate.move(0, -SPACE);
+	                        SoundEffect.PUSH.play();
+	                    }
+	                }
+	                return false;
+	                
+	            case DOWN:	                
+	                for (int i = 0; i < crates.size(); i++) {
+	                    Crate crate = crates.get(i);
+	                    
+	                    if (worker.isBottomCollision(crate)) {
+	                        for (int j = 0; j < crates.size(); j++) {	                            
+	                            Crate item = crates.get(j);
+	                            
+	                            if (!crate.equals(item)) {	                                
+	                                if (crate.isBottomCollision(item)) {
+	                                    return true;
+	                                }
+	                            }	                            
+	                            if (checkWallCollision(crate)) {
+	                                return true;
+	                            }
+	                        }
+	                        defaultSound = false;
+	                        crate.move(0, SPACE);
+	                        SoundEffect.PUSH.play();
+	                    }
+	                }	                
+	                break;
+	                
+	            default:
+	                break;
+	        }
+	        return false;
+	    }
+	
+	   public void isCompleted() {
+
+	        int nOfBags = crates.size();
+	        int finishedBags = 0;
+
+	        for (int i = 0; i < nOfBags; i++) {	            
+	            Crate crate = crates.get(i);			
+	            for (int j = 0; j < nOfBags; j++) {	                
+	                Target target =  targets.get(j);	                
+	                if (crate.getX() == target.getX() && crate.getY() == target.getY()) {	                    
+	                    finishedBags += 1;
+	                }
+	            }
+	        }
+
+	        if (finishedBags == nOfBags) {
+	        	if (level != level3)	SoundEffect.SUCCESS.play();
+	        	else	SoundEffect.FINISH.play();
+	            state = GameState.GAMEOVER;
+	            repaint();
+	        }
+	    }
 	   
 	   public static void main(String[] args) {
 		      // Use the event dispatch thread to build the UI for thread-safety.
