@@ -250,7 +250,8 @@ public class GameMain extends JPanel {	/**
 	// Run the game loop here.
 	   private void gameLoop() {
 
-	      state = GameState.PLAYING;
+	      if (state == GameState.INITIALIZED)
+		state = GameState.PLAYING;
 	   
 	      // Game loop
 	      long beginTime, timeTaken, timeLeft;  // in msec
@@ -288,7 +289,8 @@ public class GameMain extends JPanel {	/**
 	   }
 	   
 	// Refresh the display. Called back via repaint(), which invoke the paintComponent().
-	   private void gameDraw(Graphics2D g2d) {
+	   private void gameDraw(Graphics g) {
+	      ArrayList<GameObject> world = new ArrayList<>();
 	      switch (state) {
 	         case INITIALIZED:
 	            // start drawing in 'PLAYING' state
@@ -718,7 +720,7 @@ public class GameMain extends JPanel {	/**
 		            JFrame frame = new JFrame(TITLE);
 		            // Set the content-pane of the JFrame to an instance of main JPanel
 		            frame.setContentPane(new GameMain());  // main JPanel as content pane
-		            //frame.setJMenuBar(menuBar);          // menu-bar (if defined)
+		            frame.setJMenuBar(menuBar);          // menu-bar 
 		            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		            frame.pack();
 		            frame.setLocationRelativeTo(null); // center the application window
