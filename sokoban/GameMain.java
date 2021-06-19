@@ -713,10 +713,10 @@ public class GameMain extends JPanel {	/**
 	      if (level != level3) {
 	         SoundEffect.SUCCESS.play();
 	      } else {
-	         SoundEffect.FINISH.play();
-	         state = GameState.GAMEOVER;
-	         repaint();	
+	         SoundEffect.FINISH.play();	         	
 	      }
+	      state = GameState.GAMEOVER;
+	      repaint();
 	   }
 	}
 	   
