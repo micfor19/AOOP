@@ -22,8 +22,8 @@ public class GameMain extends JPanel {	/**
 	static final int SPACE = 32;
 	
 	// Define basic game variables
-	private int w = 0;
-	private int h = 0;
+	private int width = 0;
+	private int height = 0;
 
 	private boolean legalPause = false;
 	private boolean defaultSound = true;
@@ -98,7 +98,7 @@ public class GameMain extends JPanel {	/**
 	private GameCanvas canvas;
 	
 	// Declare menubar
-	static JMenuBar menuBar;
+	static JMenuBar GameMenu;
 	
 	// ------ All the game related variables here ------
 	
@@ -156,7 +156,7 @@ public class GameMain extends JPanel {	/**
 	   
 	   // UI components
 	   canvas = new GameCanvas();
-	   canvas.setPreferredSize(new Dimension(w, h));
+	   canvas.setPreferredSize(new Dimension(width, height));
 	   add(canvas, BorderLayout.CENTER);   // center of default BorderLayout
 	      
 	   // Start the game.
@@ -167,6 +167,7 @@ public class GameMain extends JPanel {	/**
 	   
 	// Initialize all the game objects, run only once.
 	public void gameInit() { 
+	   legalPause = false;
 	   setupMenuBar();
 	   SoundEffect.init();
 		    
@@ -193,8 +194,8 @@ public class GameMain extends JPanel {	/**
 	             case '\n':
 	                 y += SPACE;
 
-	                 if (this.w < x) {
-	                     this.w = x;
+	                 if (this.width < x) {
+	                     this.width = x;
 	                 }
 
 	                 x = OFFSET;
@@ -236,7 +237,7 @@ public class GameMain extends JPanel {	/**
 	             default:
 	                break;
 	      }
-	      h = y;
+	      height = y;
 	   }
 	   state = GameState.INITIALIZED;
 	}
@@ -364,7 +365,7 @@ public class GameMain extends JPanel {	/**
 	         if (checkWallCollision(worker)) {
                	    return;
                  }
-	         if (checkCrateCollision()) {
+	         if (checkBoxCollision()) {
                     return;
                  }
 	         worker.move(0, -SPACE);
@@ -376,7 +377,7 @@ public class GameMain extends JPanel {	/**
 	         if (checkWallCollision(worker)) {
                     return;
                  }
-	         if (checkCrateCollision()) {
+	         if (checkBoxCollision()) {
                     return;
                  }
 	         worker.move(0, SPACE);
@@ -388,7 +389,7 @@ public class GameMain extends JPanel {	/**
 	         if (checkWallCollision(worker)) {
                     return;
                  }
-	         if (checkCrateCollision()) {
+	         if (checkBoxCollision()) {
                     return;
                  }
 	         worker.move(-SPACE, 0);
@@ -400,7 +401,7 @@ public class GameMain extends JPanel {	/**
 	         if (checkWallCollision(worker)) {
                     return;
                  }
-	         if (checkCrateCollision()) {
+	         if (checkBoxCollision()) {
                     return;
                  }
 	         worker.move(SPACE, 0);
@@ -471,12 +472,12 @@ public class GameMain extends JPanel {	/**
 	   JMenu menu;         // a menu in the menu-bar
 	   JMenuItem menuItem; // a regular menu-item in a menu
 	      
-	   menuBar = new JMenuBar();
+	   GameMenu = new JMenuBar();
 	      
 	   // First Menu - "Game"
 	   menu = new JMenu("Game");
 	   menu.setMnemonic(KeyEvent.VK_G);
-	   menuBar.add(menu);
+	   GameMenu.add(menu);
 	 
 	   menuItem = new JMenuItem("New", KeyEvent.VK_N);
 	   menu.add(menuItem);
@@ -511,7 +512,7 @@ public class GameMain extends JPanel {	/**
 	   // Help Menu
 	   menu = new JMenu("Help");
 	   menu.setMnemonic(KeyEvent.VK_H);
-	   menuBar.add(menu);
+	   GameMenu.add(menu);
 
 	   menuItem = new JMenuItem("Help Contents", KeyEvent.VK_H);
 	   menu.add(menuItem);
@@ -589,7 +590,7 @@ public class GameMain extends JPanel {	/**
 	   return false;
 	}
 	
-	private boolean checkCrateCollision() {
+	private boolean checkBoxCollision() {
 	   switch (direction) {
 	            
 	      case LEFT:	                
@@ -696,20 +697,20 @@ public class GameMain extends JPanel {	/**
 	
 	public void isCompleted() {
 
-	   int nOfBags = crates.size();
-	   int finishedBags = 0;
+	   int nOfBoxes = crates.size();
+	   int finishedBoxes = 0;
 
-	   for (int i = 0; i < nOfBags; i++) {	            
+	   for (int i = 0; i < nOfBoxes; i++) {	            
 	      Crate crate = crates.get(i);			
-	      for (int j = 0; j < nOfBags; j++) {	                
+	      for (int j = 0; j < nOfBoxes; j++) {	                
 	         Target target =  targets.get(j);	                
 	         if (crate.getX() == target.getX() && crate.getY() == target.getY()) {	                    
-	            finishedBags += 1;
+	            finishedBoxes += 1;
 	         }
 	      }
 	   }
 
-	   if (finishedBags == nOfBags) {
+	   if (finishedBoxes == nOfBoxes) {
 	      if (level != level3) {
 	         SoundEffect.SUCCESS.play();
 	      } else {
@@ -728,7 +729,7 @@ public class GameMain extends JPanel {	/**
 	         JFrame frame = new JFrame(TITLE);
 	         // Set the content-pane of the JFrame to an instance of main JPanel
 	         frame.setContentPane(new GameMain());  // main JPanel as content pane
-	         frame.setJMenuBar(menuBar);          // menu-bar 
+	         frame.setJMenuBar(GameMenu);          // menu-bar 
 	         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	         frame.pack();
 	         frame.setLocationRelativeTo(null); // center the application window
