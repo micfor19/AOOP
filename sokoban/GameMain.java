@@ -30,7 +30,7 @@ public class GameMain extends JPanel {	/**
 	   
 	// Enumeration for the states of the game.
 	static enum GameState {
-	   INITIALIZED, PLAYING, PAUSED, GAMEOVER, DESTROYED
+	   INITIALIZED, PLAYING, PAUSED, GAMEOVER
 	}
 	static GameState state;   // current state of the game
 	
@@ -123,6 +123,7 @@ public class GameMain extends JPanel {	/**
 	+ "                    \n"
 	+ "                    \n"
 	+ "                    \n";
+	//*	Level 2
 	private String level2 
 	= "     ########       \n"
 	+ "    ##@  #  ##  ####\n"
@@ -136,12 +137,25 @@ public class GameMain extends JPanel {	/**
 	+ "    #########       \n"
 	+ "                    \n";
 	private String level3
-	//*	Level 2
-        = "    ######      ####\n"
-        + "    ##   #         #\n"
-        + "    ##$  #        ##\n"
-        + "  ####  $##        #\n"
-        + "  ##  $ $ #     ####\n"
+	//*	Level 3
+	= "                    \n"
+        + "      #####     ####\n"
+        + "    ###   #        #\n"
+    	+ "    #*@$  #       ##\n"
+    	+ "    ### $*#        #\n"
+    	+ "    #*##$ #     ####\n"
+	+ "    # # * ##        \n"
+	+ "    #$  $$*#        \n"
+	+ "    #   *  #        \n"
+	+ "    ########        \n"
+	+ "                    \n";
+	private String level4
+	//*	Level 4
+    	= "    ######      #   \n"
+    	+ "    ##   #      #   \n"
+    	+ "    ##$  #      ####\n"
+    	+ "  ####  $##       # \n"
+    	+ "  ##  $ $ #       # \n"
 	+ "#### # ## #   ######\n"
 	+ "##   # ## #####  **#\n"
 	+ "## $  $          **#\n"
@@ -300,9 +314,9 @@ public class GameMain extends JPanel {	/**
 	         g.fillRect(0, 0, this.getWidth(), this.getHeight());
 
 	         // Order of drawing is critical for correct visualization
-	         world.addAll(walls);
-	         world.addAll(targets);
 	         world.addAll(spaces);
+	         world.addAll(targets);
+	         world.addAll(walls);
 	         world.addAll(crates);
 	         world.add(worker);
 	             
@@ -347,6 +361,8 @@ public class GameMain extends JPanel {	/**
 		    level = level2;
 		 } else if (level == level2) {
 		    level = level3;
+		 } else if (level == level3) {
+		    level = level4;
 		 }	 
 		 gameInit();
 		 gameStart();					
@@ -711,7 +727,7 @@ public class GameMain extends JPanel {	/**
 	   }
 
 	   if (finishedBoxes == nOfBoxes) {
-	      if (level != level3) {
+	      if (level != level4) {
 	         SoundEffect.SUCCESS.play();
 	      } else {
 	         SoundEffect.FINISH.play();	         	
